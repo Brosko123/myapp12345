@@ -48,6 +48,10 @@ export default async function proxy(req, res) {
     
     let origin = got.stream(url, options);
 
+    origin.on("error", (err) => {
+      req.socket.destroy(); // Clean up the request socket on error
+    });
+
     origin.on('response', (originResponse) => {
 
       validateResponse(originResponse)
@@ -66,8 +70,6 @@ export default async function proxy(req, res) {
       req.params.originType = originResponse.headers["content-type"] || "";
       req.params.originSize = originResponse.headers["content-length"] || "0";
 
-      // Handle streaming response
-      origin.on('error', () => req.socket.destroy());
 
       if (shouldCompress(req)) {
         // Compress and pipe response if required
